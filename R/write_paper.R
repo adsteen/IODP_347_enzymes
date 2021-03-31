@@ -68,7 +68,8 @@ p_live_killed <- ggplot(live_killed, aes(x=v0.adj_live, y=v0.adj_killed)) +
   scale_y_log10(name = expression(paste("autoclaved ", v[0], ", ", mu, "mol ", g^{-1}, " sed ", hr^{-1}))) + 
   scale_colour_manual(values = c("black", "gray75"), guide=FALSE) +
   theme_bw() + 
-  theme(text = element_text(size=9))
+  theme(text = element_text(size=9),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 ggsave("plots/live_vs_killed.png", p_live_killed, height=2.5, width=3, units = "in", dpi=300)
 
 
@@ -77,3 +78,5 @@ summary(live_killed_mod)
 
 live_killed_mod_subs <- lm(v0.adj_killed ~ v0.adj_live + substrate, data = live_killed)
 summary(live_killed_mod_subs)
+
+# 

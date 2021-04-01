@@ -19,11 +19,14 @@ d4 <- read.csv("data/2016_02_24_km_4.5mbsf.csv")
 d11 <- read.csv("data/2016_02_17_km_11.1mbsf.csv")
 d17 <- read.csv("data/2016_02_23_km_17.6mbsf.csv")
 d24 <- read.csv("data/2016_02_25_km_24.3mbsf.csv")
-d37 <- read.csv("data/2016_02_27_km_37.5mbsf.csv") #time is wacky (48hrs)
+#d37 <- read.csv("data/2016_02_27_km_37.5mbsf.csv") #has only two times: 0 hr and 48 hrs. 
 d43 <- read.csv("data/2016_02_26_km_43.15mbsf.csv")
 
 # Put all the data into a list
-all_data_list <- list(d4=d4, d11=d11, d17=d17, d43=d43)
+#all_data_list <- list(d4=d4, d11=d11, d17=d17, d43=d43)
+all_data_list <- list(d4=d4, d11=d11, d17=d17, d24=d24, d43=d43)
+
+#d37 needs to be processed separately - see R/km_d37.R
 
 # Put all the data into a dataframe
 all_df <- ldply(all_data_list, identity)
@@ -33,6 +36,10 @@ some_day <- "2016_02_24"
 all_df$Rtime <- ymd_hm(paste(some_day, all_df$time))
 all_df$elapsed <- as.numeric(all_df$Rtime - min(all_df$Rtime, na.rm=TRUE))/3600
 attr(all_df$elapsed, "units") <- "hours"
+
+# Add in d37, for which elapsed time was calculated differently because the data were formatted differently
+source("R/preprocess_d37_sat_data.R")
+all_df <- all_df %>% 
 
 # Calculate slopes of fluorescence as a function of time
 slopes <- ddply(all_df, c("depth.mbsf", "treatment", "conc.uM", "sample.calib"), lm_stats, "elapsed", "RFU")

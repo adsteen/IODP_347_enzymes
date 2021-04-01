@@ -1,10 +1,16 @@
 # This is the master script for Jenna's baltic enzymes paper
 
 # Step 1: calculate enzyme activities, including calibrations
-
+library(tidyverse)
 # Set teh graphical theme
 theme_set(theme_bw() + 
             theme(text = element_text(size=9)))
+
+print.plots <- TRUE
+print.extra.plots <- FALSE
+save.plots <- FALSE
+
+source("R/Jennas_R/lm_stats.R")
 
 source("R/Jennas_R/2016_04_20_LB_Vmax_analysis.R")
 detach("package:reshape2", unload=TRUE)
@@ -14,10 +20,12 @@ detach("package:plyr", unload=TRUE)
 
 
 
+
+
+
 source("R/Jennas_R/2016_04_20_cell_sp_v0.R")
 
-# Generate correlation
-library(tidyverse)
+
 
 # Create v0 column with minimum values
 min.v0s <- samp_slopes %>%

@@ -5,9 +5,9 @@
 require(plyr)
 require(lubridate)
 require(reshape2)
-require(ggplot2)
+# require(ggplot2)
 #source("R/lm_stats.R")
-source("R/Jennas_R/lm_stats.R")
+
 
 
 
@@ -149,24 +149,29 @@ p_raw_e <- ggplot(d_edit, aes(x=elapsed, y=RFU, colour=treatment)) +
         #    theme(axis.title.x = element_text(face="bold", size=30),
          #            axis.text.x  = element_text(angle=-55, vjust=0.5, size=30))
 
-#print(p_raw_e)
-#ggsave("plots/2016_03_01_LB_raw_data_allsamp.png", p_raw_e, height=8, width=12, units="in", dpi=300)
-
+if(print.extra.plots) {
+  print(p_raw_e)
+}
+if(save.plots) {
+  ggsave("plots/2016_03_01_LB_raw_data_allsamp.png", p_raw_e, height=8, width=12, units="in", dpi=300)
+}
+#
 d_edit_live <-subset(d_edit, treatment=="live")
 
 p_raw_live <- ggplot(d_edit_live, aes(x=elapsed, y=RFU)) + 
-  geom_point(size=3) + 
-  theme_set(theme_bw()) +
-  theme(text=element_text(size=30)) +
-  theme(axis.title.x = element_text(face="bold", size=20),
-        axis.text.x  = element_text(angle=90, vjust=0.5, size=20)) +
   geom_smooth(method="lm", se=FALSE, size=1) + 
+  geom_point() + 
+  theme_set(theme_bw()) +
   facet_grid(depth.mbsf ~ substrate, 
-             scales="free")
-
-#print(p_raw_live)
-#ggsave("plots/2016_01_28_LB_raw_data_livesamp.png", p_raw_live, height=20, width=40, units="in", dpi=150)
-
+             scales="free") +
+  theme(axis.text.x  = element_text(angle=90, vjust=0.5)) 
+if(print.extra.plots) {
+  print(p_raw_live)
+}
+if(save.plots) {
+  ggsave("plots/2016_01_28_LB_raw_data_livesamp.png", p_raw_live, height=20, width=40, units="in", dpi=150)
+}
+#
 # Calculate slopes of fluorescence as a function of time
 samp_slopes <- ddply(d_edit, c("substrate", "treatment", "depth.mbsf", "conc.uM"), lm_stats, "elapsed", "RFU")
 
@@ -187,7 +192,10 @@ p_calib_37.5 <-ggplot(calib_37.5, aes(x=conc.uM, y=RFU))+
   geom_point()+
   geom_smooth(method="lm") +
   facet_wrap(~substrate, scales="free_y")
-#print(p_calib_37.5)
+if(print.extra.plots) {
+  print(p_calib_37.5)
+}
+#
 
 # Get rid of the bad datapoints
 calib_data_e <- subset(calib_data, !(conc.uM==8 & substrate=="amc-std" & depth.mbsf==17.6))
@@ -216,15 +224,9 @@ p_calib <- ggplot(calib_data, aes(x=conc.uM, y=RFU, colour=as.factor(depth.mbsf)
   theme(text=element_text(size=10),
         axis.title.x = element_text(face="bold"),
         axis.text.x  = element_text(angle=90, vjust=0.5))
-#print(p_calib)
-#ggsave("plots/2016_02_01_Derwcalib.png", p_calib, height=8, width=6, units="in", dpi=200)
-# ggsave("plots/2016_01_28_LB_calib.png", p_calib_e, height=15, width=30, units="in", dpi=300)
-
-# Let's just look at teh AMC data
-#ggplot(subset(calib_data, substrate=="amc-std"), aes(x=conc.uM, y=RFU)) + 
-#  geom_point() + 
-#  geom_smooth(method="lm")  +
-#  facet_grid(depth.mbsf~elapsed)
+if(print.extra.plots) {
+  print(p_calib)
+}
 
 ###################################
 ## trying to figure out what's up with calibration curve slopes
@@ -240,7 +242,10 @@ p_calib_slope_ts <-ggplot(calib_slope_ts, aes(x=elapsed, y=slope, colour=depth.m
   geom_pointrange(aes(ymax=slope+slope.se, ymin=slope-slope.se)) +
   geom_line() + 
   facet_wrap(~substrate)
-print(p_calib_slope_ts)
+if(print.extra.plots) {
+  print(p_calib_slope_ts)
+}
+
 # ggsave("plots/2016_04_20_calib_slope_ts.png", p_calib_slope_ts, height=4, width=6, units="in", dpi=400)
 
 ############################################
@@ -380,7 +385,57 @@ p_samp_slopes <- ggplot(samp_slopes, aes(x=depth.mbsf, y=v0, colour=substrate, l
   theme(axis.text.x  = element_text(angle=-45, hjust=0))+
   theme(legend.position="none")
 
-print(p_samp_slopes)
+if(print.plots) {
+  print(p_samp_slopes)
+}
+
+
+# Want to write a better approach to make nice plots
+# First, replace substrate names with enzyme names
+enzyme_names <- function(chr) {
+ case_when(chr == "phe-arg-amc" ~ "gingipain",
+           chr == "phe-val-arg-amc" ~ "clostripain",
+           chr == "arg-amc" ~ "arginyl AP",
+           chr == "leu-amc" ~ "leucyl AP",
+           chr == "pro-amc" ~ "prolyl AP",
+           chr == "orn-amc" ~ "ornithyl AP",
+           chr == "mub-b-glu" ~ "beta-glucosidase",
+           chr == "mub-a-glu" ~ "alpha-glucosidase",
+           chr == "mub-xylo" ~ "beta-xylosidase",
+           chr == "mub-nag" ~ "N-acetylglucosaminidase",
+           chr == "mub-po4" ~ "alkaline phosphatase") 
+}
+enzyme_type <- function(chr) {
+  type <- rep(NA, length(chr))
+  type[str_which(chr, pattern = "amc")] <- "peptidase"
+  type[str_which(chr, pattern = "mub")] <- "glycosylase"
+  type[type == "mub-po4"] <- "phosphatase"
+  type
+}
+
+samp_slopes <- samp_slopes %>%
+  mutate(enzyme = enzyme_names(substrate),
+         class = enzyme_type(substrate))
+
+draw_depth_plot <- function(df, colour = "black") {
+  p <- ggplot(samp_slopes, aes(x=depth.mbsf, y=v0, linetype=treatment)) + 
+    geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
+    geom_line() +
+    scale_x_reverse() + 
+    scale_linetype_manual(values=c("live"="solid","killed"="dashed")) +
+    expand_limits(xmin=0) +
+    ylab(expression(paste(v[0], ", ", mu, "mol ", "substrate ", g^{-1}, " sed ", hr^{-1})))+ 
+    xlab("depth, mbsf") + 
+    coord_flip() +
+    facet_wrap(~substrate, nrow=1)+
+    theme(axis.text.x  = element_text(angle=-45, hjust=0),
+          legend.position = "none")
+  p
+}
+
+draw_depth_plot(samp_slopes %>% filter(class == "peptidase"))
+
+
 #ggsave("plots/2016_04_20_all_activites.png", p_samp_slopes, height=8, width=5, units="in", dpi=600)
 
 #save(samp_slopes, p_samp_slopes, file="data/2016_02_17_forDrew.Rdata")

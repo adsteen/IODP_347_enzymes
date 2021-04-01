@@ -3,14 +3,10 @@
 ###########
 
 # Load necessary libraries
-require(readr)
+#require(readr)
 #require(plyr)
-require(ggplot2)
+#require(ggplot2)
 
-# set graphical theme
-theme_set(theme_bw())
-#               + theme(text=element_text(size=8),
-#                             panel.grid=element_blank()))
 
 # Read data
 cell_d <- read.csv("data/BSB_59_cell_counts.csv")

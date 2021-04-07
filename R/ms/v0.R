@@ -399,17 +399,20 @@ enzyme_names <- function(chr) {
            chr == "leu-amc" ~ "leucyl AP",
            chr == "pro-amc" ~ "prolyl AP",
            chr == "orn-amc" ~ "ornithyl AP",
-           chr == "mub-b-glu" ~ "beta-glucosidase",
-           chr == "mub-a-glu" ~ "alpha-glucosidase",
-           chr == "mub-xylo" ~ "beta-xylosidase",
-           chr == "mub-nag" ~ "N-acetylglucosaminidase",
-           chr == "mub-po4" ~ "alkaline phosphatase") 
+           chr == "mub-b-glu" ~ "beta-\nglucosidase",
+           chr == "mub-a-glu" ~ "alpha-\nglucosidase",
+           chr == "mub-xylo" ~ "beta-\nxylosidase",
+           chr == "mub-nag" ~ "N-acetyl-\nglucosaminidase",
+           chr == "mub-cell" ~ "cellobiosidase\n",
+           chr == "mub-po4" ~ "alkaline\nphosphatase") 
 }
+
+# Classifies enzymes as peptidase, glycosylase, or phosphatase
 enzyme_type <- function(chr) {
   type <- rep(NA, length(chr))
   type[str_which(chr, pattern = "amc")] <- "peptidase"
-  type[str_which(chr, pattern = "mub")] <- "glycosylase"
-  type[type == "mub-po4"] <- "phosphatase"
+  type[str_detect(chr, pattern = "mub") & !(chr == "mub-po4")] <- "glycosylase" # The fuckup: I'm mixing numeric w/ boolean indexing
+  type[chr == "mub-po4"] <- "phosphatase"
   type
 }
 
@@ -417,193 +420,70 @@ samp_slopes <- samp_slopes %>%
   mutate(enzyme = enzyme_names(substrate),
          class = enzyme_type(substrate))
 
-draw_depth_plot <- function(df, colour = "black") {
-  p <- ggplot(samp_slopes, aes(x=depth.mbsf, y=v0, linetype=treatment)) + 
-    geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
-    geom_line() +
+draw_depth_plot <- function(df, colour = "black", x.title = FALSE, y.title = FALSE, legend = FALSE) {
+  # First assign axis limits depending on which enzyme class we're talking about
+  get_ymax <- function(x) {
+    if(length(unique(x)) !=1) {
+      ymax <- 80
+    } else {
+      ymax <- switch (unique(x)[1],
+        "peptidase" = 45,
+        "glycosylase" = 20,
+        "phosphatase" = 85
+      )
+    }
+    ymax
+  }
+  max.y <- get_ymax(df$class) # Get the limit for the subpanel
+  
+  p <- ggplot(df, aes(x=depth.mbsf, y=v0*1000, linetype=treatment, colour = class)) + 
+    geom_pointrange(aes(ymin=v0*1000-v0.se*1000, ymax=v0*1000+v0.se*1000, shape = treatment), size = 0.25) +
+    geom_line(size = 0.25) +
+    geom_vline(xintercept = 51, colour = "gray50") + 
     scale_x_reverse() + 
     scale_linetype_manual(values=c("live"="solid","killed"="dashed")) +
+    scale_colour_manual(values = c("peptidase" = "#1b9e77", "glycosylase" = "#d95f02", "phosphatase" = "#7570b3")) +
+    scale_shape_manual(values = c(1, 19)) + 
     expand_limits(xmin=0) +
-    ylab(expression(paste(v[0], ", ", mu, "mol ", "substrate ", g^{-1}, " sed ", hr^{-1})))+ 
+    ylim(c(-2, max.y)) + 
+    ylab(expression(paste(v[0], ", ", "nmol ", "substrate ", g^{-1}, " sed ", hr^{-1})))+ 
     xlab("depth, mbsf") + 
     coord_flip() +
-    facet_wrap(~substrate, nrow=1)+
+    facet_wrap(~enzyme, nrow=1) +
     theme(axis.text.x  = element_text(angle=-45, hjust=0),
-          legend.position = "none")
+          text = element_text(size = 8))
+  if(!legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  if(!x.title) {
+    p <- p + theme(axis.title.x = element_blank())
+  }
+  if(!y.title) {
+    p <- p + theme(axis.title.y = element_blank())
+  }
+  
   p
 }
 
-draw_depth_plot(samp_slopes %>% filter(class == "peptidase"))
+p_legend <- cowplot::get_legend(draw_depth_plot(samp_slopes, legend = TRUE))
 
+# Huh: what if I make each plot separately
+unique.enzymes <- unique(samp_slopes$enzyme)
+plot_list <- list()
+for(i in unique.enzymes) {
+  single_enz <- samp_slopes %>% filter(enzyme == i)
+  plot_list[[i]] <- draw_depth_plot(single_enz)
+}
 
-#ggsave("plots/2016_04_20_all_activites.png", p_samp_slopes, height=8, width=5, units="in", dpi=600)
+v0_fig <- cowplot::plot_grid(plot_list[["clostripain"]], plot_list[["gingipain"]], plot_list[["arginyl AP"]], plot_list[["leucyl AP"]], plot_list[["prolyl AP"]], plot_list[["ornithyl AP"]], NULL,
+                             plot_list[["alpha-\nglucosidase"]], plot_list[["beta-\nglucosidase"]], plot_list[["cellobiosidase\n"]], plot_list[["beta-\nxylosidase"]], plot_list[["N-acetyl-\nglucosaminidase"]], plot_list[["alkaline\nphosphatase"]], p_legend,
+                             ncol = 7)
 
-#save(samp_slopes, p_samp_slopes, file="data/2016_02_17_forDrew.Rdata")
-
-#p_samp_slopes_e <- ggplot(samp_slopes_e, aes(x=depth.mbsf, y=v0, colour=treatment)) + 
-#  geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
-#  geom_line() +
-#  scale_x_reverse() + 
-#  expand_limits(xmin=0) +
-#  ylab(expression(paste(v[0], ", ", mu, "mol ", g^{-1}, " sed ", hr^{-1})))+ 
-#  xlab("depth, mbsf") + 
-#  coord_flip() +
-#  facet_wrap(~substrate) +
-#  theme_set(theme_bw()) +
-#  theme(text=element_text(size=70)) +
-#  theme(axis.title.x = element_text(face="bold", size=60))
-#        axis.text.x = element_text(angle=-45, vjust=0.5, size=50)
-#print(p_samp_slopes_e)
-#ggsave("plots/2015_12_16_LB_samp_slopes_e.png", p_samp_slopes_e, height=20, width=20, units="in", dpi=150)
-
-
-#plot only the live samples
-#live_samp_slopes <- subset(samp_slopes, treatment=="live")
-
-#p_live_samp_slopes <- ggplot(live_samp_slopes, aes(x=depth.mbsf, y=v0)) + 
-#  geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
-#  geom_line() +
-#  scale_x_reverse() + 
-#  expand_limits(xmin=0) +
-#  ylab(expression(paste(v[0], ", ", mu, "mol ", g^{-1}, " sed ", hr^{-1})))+ 
-#  xlab("depth, mbsf") + 
-#  coord_flip() +
-#  facet_wrap(~substrate)+
-#  theme_set(theme_bw()) +
-#  theme(text=element_text(size=70)) +
-#  theme(axis.title.x = element_text(face="bold", size=60),
-#        axis.text.x  = element_text(angle=-45, vjust=0.5, size=50))
-#print(p_live_samp_slopes)
-#ggsave("plots/2016_01_26_LB_live_samp_slopes.png", p_live_samp_slopes, height=20, width=20, units="in", dpi=150)
-
-#plot peptidases only
-samp_slopes_amc <- subset(samp_slopes, !(substrate=="mub-po4"))
-samp_slopes_amc <-subset(samp_slopes_amc, !(substrate=="mub-xylo"))
-samp_slopes_amc <-subset(samp_slopes_amc, !(substrate=="mub-a-glu"))
-samp_slopes_amc <-subset(samp_slopes_amc, !(substrate=="mub-cell"))
-samp_slopes_amc <-subset(samp_slopes_amc, !(substrate=="mub-b-glu"))
-samp_slopes_amc <-subset(samp_slopes_amc, !(substrate=="mub-nag"))
-
-p_samp_slopes_amc <- ggplot(samp_slopes_amc, aes(x=depth.mbsf, y=v0, colour=treatment)) + 
-  geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
-  geom_line() +
-  scale_x_reverse() + 
-  expand_limits(xmin=0) +
-  ylab(expression(paste(v[0], ", ", mu, "mol ", g^{-1}, " sed ", hr^{-1})))+ 
-  xlab("depth, mbsf") + 
-  coord_flip() +
-  facet_wrap(~substrate, nrow=1) +
- #theme_set(theme_bw()) +
-  #    theme(text=element_text(size=70)) +
-theme(axis.text.x  = element_text(angle=-45, hjust=-0.4, vjust=1.6))
-print(p_samp_slopes_amc)
-#ggsave("plots/2016_03_03_peptidase_activites.png", p_samp_slopes_amc, height=4, width=10, units="in", dpi=400)
-
-#######
-#plot MUBs without AMCs
-########
-
-#plot polysacharide hydrolases
-samp_slopes_mub <- subset(samp_slopes, !(substrate=="arg-amc"))
-samp_slopes_mub <-subset(samp_slopes_mub, !(substrate=="leu-amc"))
-samp_slopes_mub <-subset(samp_slopes_mub, !(substrate=="orn-amc"))
-samp_slopes_mub <-subset(samp_slopes_mub, !(substrate=="phe-arg-amc"))
-samp_slopes_mub <-subset(samp_slopes_mub, !(substrate=="phe-val-arg-amc"))
-samp_slopes_mub <-subset(samp_slopes_mub, !(substrate=="pro-amc"))
-samp_slopes_mub <- subset(samp_slopes_mub, !(substrate=="mub-po4"))
-
-p_samp_slopes_mub <- ggplot(samp_slopes_mub, aes(x=depth.mbsf, y=v0, colour=treatment)) + 
-  geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
-  geom_line() +
-  scale_x_reverse() + 
-  expand_limits(xmin=0) +
-  ylab(expression(paste(v[0], ", ", mu, "mol ", g^{-1}, " sed ", hr^{-1})))+ 
-  xlab("depth, mbsf") + 
-  coord_flip() +
-  facet_wrap(~substrate, nrow=1) +
-  #theme_set(theme_bw()) +
-  #    theme(text=element_text(size=70)) +
-  theme(axis.text.x  = element_text(angle=-45, hjust=-0.4, vjust=1.6))
-print(p_samp_slopes_mub)
-#ggsave("plots/2016_03_03_glycosylase_activities.png", p_samp_slopes_mub, height=4, width=10, units="in", dpi=400)
-
-#plot alkaline phosphatase 
-samp_slopes_po4 <- subset(samp_slopes, !(substrate=="leu-amc"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="mub-xylo"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="mub-a-glu"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="mub-cell"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="mub-b-glu"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="mub-nag"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="arg-amc"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="orn-amc"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="phe-arg-amc"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="phe-val-arg-amc"))
-samp_slopes_po4 <-subset(samp_slopes_po4, !(substrate=="pro-amc"))
-
-p_samp_slopes_po4 <- ggplot(samp_slopes_po4, aes(x=depth.mbsf, y=v0, colour=treatment)) + 
-  geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se)) +
-  geom_line() +
-  scale_x_reverse() + 
-  expand_limits(xmin=0) +
-  ylab(expression(paste(v[0], ", ", mu, "mol ", g^{-1}, " sed ", hr^{-1})))+ 
-  xlab("depth, mbsf") + 
-  coord_flip() +
-  facet_wrap(~substrate) 
-#theme_set(theme_bw()) +
-#theme(text=element_text(size=70)) +
-#theme(axis.title.x = element_text(face="bold", size=60),
-#     axis.text.x  = element_text(angle=-45, vjust=0.5, size=50))
-#print(p_samp_slopes_po4)
-#ggsave("plots/2016_02_26_phosphatase_activity.png", p_samp_slopes_po4, height=3, width=4, units="in", dpi=400)
-
-##############################
-##############################
-#Analyzing Buffer Controls
-##############################
-
-#Split out standard data from samples
-d_all_buffers <- subset(all_df, sample.calib=="standard")
-
-d_sub_buffers <- subset(d_all_buffers, !(substrate=="mub-std"))
-d_sub_buffers <- subset(d_sub_buffers, !(substrate=="amc-std"))
-
-p_sub_buffers <- ggplot(d_sub_buffers, aes(x=elapsed, y=RFU, colour=substrate)) + 
-  geom_point() + 
-  geom_smooth(method="lm", se=FALSE) + 
-  theme_set(theme_bw()) +
-  theme(text=element_text(size=50)) +
-  theme(axis.title.x = element_text(face="bold", size=50))
-        axis.text.x  = element_text(angle=-55, vjust=0.5, size=40)
-
-#print(p_sub_buffers)
-#ggsave("plots/2015_12_23_LB_sub_buffers.png", p_sub_buffers, height=20, width=40, units="in", dpi=300)
-
-###########################
-#standards with buffer
-###########################
-
-d_mub_buffers <- subset(d_all_buffers, (substrate=="mub-std"))
-
-p_mub_buffers <- ggplot(d_mub_buffers, aes(x=elapsed, y=RFU, colour=substrate)) + 
-  geom_point() + 
-  geom_smooth(method="lm", se=FALSE) + 
-  theme_set(theme_bw()) +
-  theme(text=element_text(size=50)) +
-  theme(axis.title.x = element_text(face="bold", size=50),
-        axis.text.x  = element_text(angle=-55, vjust=0.5, size=40))
-#print(p_mub_buffers)
-#ggsave("plots/2015_12_23_LB_mub_buffers.png", p_mub_buffers, height=20, width=40, units="in", dpi=300)
-    
-##############    
-d_amc_buffers <- subset(d_all_buffers, (substrate=="amc-std"))
-
-p_amc_buffers <- ggplot(d_amc_buffers, aes(x=elapsed, y=RFU, colour=substrate)) + 
-  geom_point() + 
-  geom_smooth(method="lm", se=FALSE) + 
-  theme_set(theme_bw()) +
-  theme(text=element_text(size=50)) +
-  theme(axis.title.x = element_text(face="bold", size=50),
-        axis.text.x  = element_text(angle=-55, vjust=0.5, size=40))
-#print(p_amc_buffers)
-#ggsave("plots/2015_12_23_LB_amc_buffers.png", p_amc_buffers, height=20, width=40, units="in", dpi=300)
-
+x.grob <- grid::textGrob(expression(paste(v[0], ", nmol substrate g " , sed^{-1}, " ", hr^{-1})), 
+                  gp=grid::gpar(fontface="bold", col="black", fontsize=10))
+y.grob <- grid::textGrob("depth, mbsf", 
+                         gp=grid::gpar(col="black", fontsize=10), rot = 90)
+p_v0_final <- gridExtra::grid.arrange(gridExtra::arrangeGrob(v0_fig, left = y.grob, bottom = x.grob))
+png("plots/v0_downcore.png", height = 4, width = 7.08, units = "in", res = 300)
+print(p_v0_final)
+dev.off()

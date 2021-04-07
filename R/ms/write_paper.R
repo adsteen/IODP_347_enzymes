@@ -2,28 +2,25 @@
 
 # Step 1: calculate enzyme activities, including calibrations
 library(tidyverse)
-# Set teh graphical theme
+# Set the graphical theme
 theme_set(theme_bw() + 
             theme(text = element_text(size=9)))
 
 print.plots <- TRUE
 print.extra.plots <- FALSE
-save.plots <- FALSE
+save.plots <- TRUE
 
-source("R/Jennas_R/lm_stats.R")
+# Most of this code was written in pre-tidyverse syntax
+# lm_stats performs linear regressions and returns slopes and std errors, a bit like a combination of map, lm and some broom functions
+source("R/ms/lm_stats.R")
 
-source("R/Jennas_R/2016_04_20_LB_Vmax_analysis.R")
+# Calculate v0 data for figure 1
+source("R/ms/v0.R")
 detach("package:reshape2", unload=TRUE)
-detach("package:lubridate", unload=TRUE)
-detach("package:ggplot2", unload=TRUE)
 detach("package:plyr", unload=TRUE)
 
-
-
-
-
-
-source("R/Jennas_R/2016_04_20_cell_sp_v0.R")
+# Calculate cell-specific v0 data
+source("R/ms/v0_cell_sp.R")
 
 
 

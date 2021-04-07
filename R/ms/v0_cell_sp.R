@@ -50,7 +50,13 @@ p_cells <- ggplot() +
   ylab(expression(paste("cells ", ml^{-1}, " sed"))) +
   coord_flip() + 
   theme(legend.position="top")
-print(p_cells)
+if(print.plots) {
+  print(p_cells)
+}
+if(save.plots) {
+  ggsave("plots/cell_counts_no_smoothing.png", p_cells, height=4, width=3, units="in", dpi=300)
+}
+
 #ggsave("plots/2016_04_13_cell_smoothing.png", p_cells, height=4, width=3, units="in", dpi=300)
 
 
@@ -66,6 +72,7 @@ print(p_cells)
 
 # Say your data frame of enzyme activities is called 'slopes', and the depth column is called 'depth'
 cell_pred <- read.csv("data/2016_04_16_cell_smoothing.csv")
+# Note: This script makes predictions (m_shallow and m_deep), saves the predictions to a .csv, and then re-loads them. Deal with it.gif
 slopes_and_cells <- merge(samp_slopes, cell_pred, by.x="depth.mbsf", by.y="depth.m")
 slopes_and_cells$cell.sp.v0 <- slopes_and_cells$v0 / slopes_and_cells$pred.cells
 slopes_and_cells$cell.sp.v0.se <- slopes_and_cells$v0.se / slopes_and_cells$pred.cells
@@ -81,32 +88,77 @@ slopes_and_cells$cell.sp.v0 <- slopes_and_cells$cell.sp.v0 * 1e12
 slopes_and_cells$cell.sp.v0.se <- slopes_and_cells$cell.sp.v0.se * 1e12
 attr(slopes_and_cells$cell.sp.v0, "units") <- "femtomole per cell per hour"
 
+# Copied code from v0.R, but replaced the y, ymin and ymax arguments. 
+# Remember kids: if you like writing code, then writing non-extensible code gives you an excuse to write more code!
+draw_depth_plot <- function(df, colour = "black", x.title = FALSE, y.title = FALSE, legend = FALSE) {
+  # First assign axis limits depending on which enzyme class we're talking about
+  get_ymax <- function(x) {
+    if(length(unique(x)) !=1) {
+      ymax <- 80
+    } else {
+      ymax <- switch (unique(x)[1],
+                      "peptidase" = 175,
+                      "glycosylase" = 75,
+                      "phosphatase" = 700
+      )
+    }
+    ymax
+  }
+  max.y <- get_ymax(df$class) # Get the limit for the subpanel
+  
+  p <- ggplot(df, aes(x=depth.mbsf, y=cell.sp.v0, linetype=treatment, colour = class)) + 
+    geom_pointrange(aes(ymin=cell.sp.v0-cell.sp.v0.se, ymax=cell.sp.v0+cell.sp.v0.se, shape = treatment), size = 0.25) +
+    geom_line(size = 0.25) +
+    geom_vline(xintercept = 51, colour = "gray50") + 
+    scale_x_reverse() + 
+    scale_linetype_manual(values=c("live"="solid","killed"="dashed")) +
+    scale_colour_manual(values = c("peptidase" = "#1b9e77", "glycosylase" = "#d95f02", "phosphatase" = "#7570b3")) +
+    scale_shape_manual(values = c(1, 19)) + 
+    expand_limits(xmin=0) +
+    ylim(c(-11, max.y)) + 
+    ylab(expression(paste("cell specific ", v[0], ", amol substrate ", cell^{-1}, " ", hr^{-1})))+ 
+    xlab("depth, mbsf") + 
+    coord_flip() +
+    facet_wrap(~enzyme, nrow=1) +
+    theme(axis.text.x  = element_text(angle=-45, hjust=0),
+          text = element_text(size = 8))
+  if(!legend) {
+    p <- p + theme(legend.position = "none")
+  }
+  if(!x.title) {
+    p <- p + theme(axis.title.x = element_blank())
+  }
+  if(!y.title) {
+    p <- p + theme(axis.title.y = element_blank())
+  }
+  
+  p
+}
 
-# Reordering the factors
-slopes_and_cells$substrate <- factor(slopes_and_cells$substrate,
-                                levels = c("phe-arg-amc", "phe-val-arg-amc", "arg-amc", "leu-amc", 
-                                           "pro-amc", "orn-amc", "mub-b-glu", "mub-a-glu", 
-                                           "mub-cell", "mub-xylo", "mub-nag", "mub-po4"))
-# Plot the data
-p_slopes_and_cells <- ggplot(slopes_and_cells, aes(x=depth.mbsf, y=cell.sp.v0, colour=substrate, linetype=treatment)) + 
-  geom_pointrange(aes(ymin=cell.sp.v0-cell.sp.v0.se, ymax=cell.sp.v0+cell.sp.v0.se)) +
-  geom_line() +
-  scale_x_reverse() + 
-  scale_linetype_manual(values=c("live"="solid","killed"="dashed")) +
-  scale_colour_manual(values=c("phe-arg-amc"="dark green", "phe-val-arg-amc"="dark green", 
-                               "arg-amc"="dark green", "leu-amc"="dark green", "pro-amc"="dark green", 
-                               "orn-amc"="dark green", "mub-b-glu"="red", "mub-a-glu"="red", 
-                               "mub-cell"="red", "mub-xylo"="red", "mub-nag"="red", 
-                               "mub-po4"="blue")) +
-  expand_limits(xmin=0) +
-  ylab(expression(paste("cell specific ", v[0], ", amol ", "substrate ", cell^{-1}, " ", hr^{-1} )))+ 
-  xlab("depth, mbsf") + 
-  coord_flip() +
-  facet_wrap(~substrate, nrow=4) +
-  #theme_set(theme_bw()) +
-  #    theme(text=element_text(size=70)) +
-  theme(axis.text.x  = element_text(angle=-45, hjust=0)) +
-  theme(legend.position="none")
-print(p_slopes_and_cells)
-ggsave("plots/2016_04_26_cell.sp.V0.png", p_slopes_and_cells, height=8, width=5, units="in", dpi=600)
+# Get plot legend
+p_legend <- cowplot::get_legend(draw_depth_plot(slopes_and_cells, legend = TRUE))
+
+unique.enzymes <- unique(slopes_and_cells$enzyme)
+plot_list <- list()
+for(i in unique.enzymes) {
+  single_enz <- slopes_and_cells %>% filter(enzyme == i)
+  plot_list[[i]] <- draw_depth_plot(single_enz)
+}
+
+v0_fig <- cowplot::plot_grid(plot_list[["clostripain"]], plot_list[["gingipain"]], plot_list[["arginyl AP"]], plot_list[["leucyl AP"]], plot_list[["prolyl AP"]], plot_list[["ornithyl AP"]], NULL,
+                             plot_list[["alpha-\nglucosidase"]], plot_list[["beta-\nglucosidase"]], plot_list[["cellobiosidase\n"]], plot_list[["beta-\nxylosidase"]], plot_list[["N-acetyl-\nglucosaminidase"]], plot_list[["alkaline\nphosphatase"]], p_legend,
+                             ncol = 7)
+
+x.grob <- grid::textGrob(expression(paste(v[0], ", nmol substrate g " , sed^{-1}, " ", hr^{-1})), 
+                         gp=grid::gpar(fontface="bold", col="black", fontsize=10))
+y.grob <- grid::textGrob("depth, mbsf", 
+                         gp=grid::gpar(col="black", fontsize=10), rot = 90)
+p_v0_final <- gridExtra::grid.arrange(gridExtra::arrangeGrob(v0_fig, left = y.grob, bottom = x.grob))
+
+if(print.plots) {
+  print(p_v0_final)
+}
+if(save.plots) {
+  ggsave("plots/v0_downcore_cell_specific.png", p_v0_final, height = 4, width = 7.08, units = "in", dpi = 300)
+}
 

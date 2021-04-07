@@ -484,6 +484,18 @@ x.grob <- grid::textGrob(expression(paste(v[0], ", nmol substrate g " , sed^{-1}
 y.grob <- grid::textGrob("depth, mbsf", 
                          gp=grid::gpar(col="black", fontsize=10), rot = 90)
 p_v0_final <- gridExtra::grid.arrange(gridExtra::arrangeGrob(v0_fig, left = y.grob, bottom = x.grob))
-png("plots/v0_downcore.png", height = 4, width = 7.08, units = "in", res = 300)
-print(p_v0_final)
-dev.off()
+
+if(print.plots) {
+  print(p_v0_final)
+}
+if(save.plots) {
+  ggsave("plots/v0_downcore.png", p_v0_final, height = 4, width = 7.08, units = "in", dpi = 300)
+}
+
+#######
+# Delete unused objects
+#######
+
+unused <- NA
+unused <- ls()[!ls() %in% c("print.plots", "print.extra.plots", "save.plots", "samp_slopes")] # Run this twice, believe it or not, to get the 
+rm(list=unused)

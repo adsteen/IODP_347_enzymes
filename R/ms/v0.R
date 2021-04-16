@@ -6,7 +6,7 @@ require(plyr)
 require(lubridate)
 require(reshape2)
 # require(ggplot2)
-#source("R/lm_stats.R")
+source("R/ms/draw_depth_plot.R")
 
 
 
@@ -420,51 +420,8 @@ samp_slopes <- samp_slopes %>%
   mutate(enzyme = enzyme_names(substrate),
          class = enzyme_type(substrate))
 
-draw_depth_plot <- function(df, colour = "black", x.title = FALSE, y.title = FALSE, legend = FALSE) {
-  # First assign axis limits depending on which enzyme class we're talking about
-  get_ymax <- function(x) {
-    if(length(unique(x)) !=1) {
-      ymax <- 80
-    } else {
-      ymax <- switch (unique(x)[1],
-        "peptidase" = 45,
-        "glycosylase" = 20,
-        "phosphatase" = 85
-      )
-    }
-    ymax
-  }
-  max.y <- get_ymax(df$class) # Get the limit for the subpanel
-  
-  p <- ggplot(df, aes(x=depth.mbsf, y=v0*1000, linetype=treatment, colour = class)) + 
-    geom_pointrange(aes(ymin=v0*1000-v0.se*1000, ymax=v0*1000+v0.se*1000, shape = treatment), size = 0.25) +
-    geom_line(size = 0.25) +
-    geom_vline(xintercept = 51, colour = "gray50") + 
-    scale_x_reverse() + 
-    scale_linetype_manual(values=c("live"="solid","killed"="dashed")) +
-    scale_colour_manual(values = c("peptidase" = "#1b9e77", "glycosylase" = "#d95f02", "phosphatase" = "#7570b3")) +
-    scale_shape_manual(values = c(1, 19)) + 
-    expand_limits(xmin=0) +
-    ylim(c(-2, max.y)) + 
-    ylab(expression(paste(v[0], ", ", "nmol ", "substrate ", g^{-1}, " sed ", hr^{-1})))+ 
-    xlab("depth, mbsf") + 
-    coord_flip() +
-    facet_wrap(~enzyme, nrow=1) +
-    theme(axis.text.x  = element_text(angle=-45, hjust=0),
-          text = element_text(size = 8))
-  if(!legend) {
-    p <- p + theme(legend.position = "none")
-  }
-  if(!x.title) {
-    p <- p + theme(axis.title.x = element_blank())
-  }
-  if(!y.title) {
-    p <- p + theme(axis.title.y = element_blank())
-  }
-  
-  p
-}
 
+# Get a legend for the grouped plots. I won't use the plot, just the legend
 p_legend <- cowplot::get_legend(draw_depth_plot(samp_slopes, legend = TRUE))
 
 # Huh: what if I make each plot separately
@@ -477,7 +434,8 @@ for(i in unique.enzymes) {
 
 v0_fig <- cowplot::plot_grid(plot_list[["clostripain"]], plot_list[["gingipain"]], plot_list[["arginyl AP"]], plot_list[["leucyl AP"]], plot_list[["prolyl AP"]], plot_list[["ornithyl AP"]], NULL,
                              plot_list[["alpha-\nglucosidase"]], plot_list[["beta-\nglucosidase"]], plot_list[["cellobiosidase\n"]], plot_list[["beta-\nxylosidase"]], plot_list[["N-acetyl-\nglucosaminidase"]], plot_list[["alkaline\nphosphatase"]], p_legend,
-                             ncol = 7)
+                             ncol = 7, 
+                             rel_widths = c(1.15, rep(1, 5), 1.3))
 
 x.grob <- grid::textGrob(expression(paste(v[0], ", nmol substrate g " , sed^{-1}, " ", hr^{-1})), 
                   gp=grid::gpar(fontface="bold", col="black", fontsize=10))

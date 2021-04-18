@@ -142,12 +142,7 @@ d_edit <- subset(d_edit, !(substrate=="orn-amc" & depth.mbsf==37.5 & treatment==
 p_raw_e <- ggplot(d_edit, aes(x=elapsed, y=RFU, colour=treatment)) + 
   geom_point() + 
   geom_smooth(method="lm", se=FALSE) + 
-  facet_grid(depth.mbsf ~ substrate, 
-             scales="free") 
-  #theme_set(theme_bw()) +
-       #     theme(text=element_text(size=40)) +
-        #    theme(axis.title.x = element_text(face="bold", size=30),
-         #            axis.text.x  = element_text(angle=-55, vjust=0.5, size=30))
+  facet_grid(depth.mbsf ~ substrate, scales="free") 
 
 if(print.extra.plots) {
   print(p_raw_e)
@@ -179,12 +174,15 @@ samp_slopes <- ddply(d_edit, c("substrate", "treatment", "depth.mbsf", "conc.uM"
 #Calibrate
 ###########
 
-calib_data <- subset(all_df, sample.calib=="calib") # What is going on 
+calib_data <- subset(all_df, sample.calib=="calib") 
 p_calib <- ggplot(calib_data, aes(x=conc.uM, y=RFU, colour=as.factor(depth.mbsf))) + 
   geom_point() + 
   geom_smooth(method="lm") + 
   facet_wrap(~substrate, scales="free_y")
-#print(p_calib)
+if(print.extra.plots) {
+  print(p_calib)
+}
+#
 
 #Plot to see individual depth plots 
 calib_37.5 <- subset(calib_data, depth.mbsf=="37.5")
@@ -193,7 +191,7 @@ p_calib_37.5 <-ggplot(calib_37.5, aes(x=conc.uM, y=RFU))+
   geom_smooth(method="lm") +
   facet_wrap(~substrate, scales="free_y")
 if(print.extra.plots) {
-  print(p_calib_37.5)
+  print(p_calib_37.5) # THe weird thing is that this looks like 3 separate calibration curves (for MUB, at least)
 }
 #
 
@@ -262,88 +260,12 @@ samp_slopes$calib.slope <- NA
 AMC.subs <- c("arg-amc", "leu-amc", "orn-amc", "phe-arg-amc","phe-val-arg-amc", "pro-amc")
 MUB.subs <- c("mub-a-glu", "mub-b-glu", "mub-cell", "mub-nag", "mub-po4", "mub-xylo")
 
-# add in calibration slope for depth 4.5, AMC substrates (mub calib depth changed to 61.55 on 4.5, 
-  #11.1, 17.6, 24.3, and 37.5 just to see 12-18-15)
-samp_slopes[samp_slopes$depth==4.5 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==4.5, "slope"]
-# add in calibration slope for depth 4.5, MUB substrates
-samp_slopes[samp_slopes$depth==4.5 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==4.5, "slope"]
-
-samp_slopes[samp_slopes$depth==11.1 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==11.1, "slope"]
-# add in calibration slope for depth 11.1, MUB substrates
-samp_slopes[samp_slopes$depth==11.1 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==4.5, "slope"]
-
-# add in calibration slope for depth 17.6, AMC substrates
-samp_slopes[samp_slopes$depth==17.6 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==17.6, "slope"]
-# add in calibration slope for depth 17.6, MUB substrates
-samp_slopes[samp_slopes$depth==17.6 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==4.5, "slope"]
-
-samp_slopes[samp_slopes$depth==24.3 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==24.3, "slope"]
-# add in calibration slope for depth 4.5, MUB substrates
-samp_slopes[samp_slopes$depth==24.3 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==30.9, "slope"]
-
-samp_slopes[samp_slopes$depth==30.9 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==30.9, "slope"]
-# add in calibration slope for depth 4.5, MUB substrates
-samp_slopes[samp_slopes$depth==30.9 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==30.9, "slope"]
-
-# add in calibration slope for depth 37.5, AMC substrates
-samp_slopes[samp_slopes$depth==37.5 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==37.5, "slope"]
-# add in calibration slope for depth 37.5, MUB substrates
-samp_slopes[samp_slopes$depth==37.5 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==30.9, "slope"]
-
-samp_slopes[samp_slopes$depth==43.15 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==43.15, "slope"]
-# add in calibration slope for depth 43.15, MUB substrates
-samp_slopes[samp_slopes$depth==43.15 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==43.15, "slope"]
-
-samp_slopes[samp_slopes$depth==48.22 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==48.22, "slope"]
-# add in calibration slope for depth 48.22, MUB substrates
-samp_slopes[samp_slopes$depth==48.22 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==48.22, "slope"]
-
-# add in calibration slope for depth 54.95, AMC substrates
-samp_slopes[samp_slopes$depth==54.95 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==54.95, "slope"]
-# add in calibration slope for depth 54.95, MUB substrates
-samp_slopes[samp_slopes$depth==54.95 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==54.95, "slope"]
-
-# add in calibration slope for depth 61.55, AMC substrates
-samp_slopes[samp_slopes$depth==61.55 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==61.55, "slope"]
-# add in calibration slope for depth 61.55, MUB substrates
-samp_slopes[samp_slopes$depth==61.55 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==61.55, "slope"]
-
-# add in calibration slope for depth 68.12, AMC substrates
-samp_slopes[samp_slopes$depth==68.12 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==68.12, "slope"]
-# add in calibration slope for depth 68.12, MUB substrates
-samp_slopes[samp_slopes$depth==68.12 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==68.12, "slope"]
-
-samp_slopes[samp_slopes$depth==77.92 & samp_slopes$substrate %in% AMC.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="amc-std" & calib_slopes$depth.mbsf==77.92, "slope"]
-# add in calibration slope for depth 77.92, MUB substrates
-samp_slopes[samp_slopes$depth==77.92 & samp_slopes$substrate %in% MUB.subs, "calib.slope"] <- 
-  calib_slopes[calib_slopes$substrate=="mub-std" & calib_slopes$depth.mbsf==77.92, "slope"]
+# Motherfucker, I somehow got rid of the part where I actually create the calib slopes
+source("R/ms/clean_v0_calib_units.R")
 
 # Get uM fluorophore per hour by dividing slope of RFU per hour ("slope") by calibration slope ("calib.slope")
-samp_slopes$v0.bulk <- samp_slopes$slope / samp_slopes$calib.slope
-samp_slopes$v0.bulk.se <- samp_slopes$slope.se / samp_slopes$calib.slope
+samp_slopes$v0.bulk <- samp_slopes$slope / samp_slopes$calib.slope * 1000 # switching from uM to nM units
+samp_slopes$v0.bulk.se <- samp_slopes$slope.se / samp_slopes$calib.slope * 1000
 
 
 # Make a small data frame of sample depths and g sediment per g buffer

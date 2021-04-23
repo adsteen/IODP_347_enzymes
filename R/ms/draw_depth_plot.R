@@ -1,21 +1,25 @@
-draw_depth_plot <- function(df, colour = "black", x.title = FALSE, y.title = FALSE, legend = FALSE) {
+draw_depth_plot <- function(df, colour = "black", x.title = FALSE, y.title = FALSE, legend = FALSE, cell.sp = FALSE) {
   # First assign axis limits depending on which enzyme class we're talking about
-  get_ymax <- function(x) {
+  get_ymax <- function(x, cell.sp) {
     if(length(unique(x)) !=1) {
       ymax <- 80
-    } else {
-      ymax <- switch (unique(x)[1],
+    } else if (!cell.sp) { # this is v0, units are nmol g-1 hr-1
+      ymax <- switch(unique(x)[1],
                       "peptidase" = 40,
                       "glycosylase" = 21,
-                      "phosphatase" = 80
-      )
+                      "phosphatase" = 80)
+    } else { # In this case, it should be cell-specific v0 and units will be amol per cell
+      ymax <- switch(unique(x)[1],
+                     "peptidase" = 175,
+                     "glycosylase" = 75,
+                     "phosphatase" = 700)
     }
     ymax
   }
-  max.y <- get_ymax(df$class) # Get the limit for the subpanel
+  max.y <- get_ymax(df$class, cell.sp) # Get the limit for the subpanel
   
-  p <- ggplot(df, aes(x=depth.mbsf, y=v0*1000, linetype=treatment, colour = class)) + 
-    geom_pointrange(aes(ymin=v0*1000-v0.se*1000, ymax=v0*1000+v0.se*1000, shape = treatment), size = 0.25) +
+  p <- ggplot(df, aes(x=depth.mbsf, y=v0, linetype=treatment, colour = class)) + 
+    geom_pointrange(aes(ymin=v0-v0.se, ymax=v0+v0.se, shape = treatment), size = 0.25) +
     geom_line(size = 0.25) +
     geom_vline(xintercept = 51, colour = "gray50") + 
     scale_x_reverse() + 

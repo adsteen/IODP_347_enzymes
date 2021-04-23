@@ -13,7 +13,8 @@
 lm_stats <- function(d, xvar, yvar) {
   # Function to safely return the slope, intercept, slope.se, int.se, rsq, and pvalue of a linear model
   #print(d[1, ])
-  
+  #browser()
+  d <- as.data.frame(d)
   ##### CHeck that this tryCatch syntax is correct
   #get_model <- function(m) {
   # m <- tryCatch(

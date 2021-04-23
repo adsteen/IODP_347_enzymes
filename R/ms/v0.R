@@ -377,5 +377,5 @@ if(save.plots) {
 #######
 
 unused <- NA
-unused <- ls()[!ls() %in% c("print.plots", "print.extra.plots", "save.plots", "samp_slopes")] # Run this twice, believe it or not, to get the 
+unused <- ls()[!ls() %in% c("print.plots", "print.extra.plots", "save.plots", "samp_slopes", "lm_stats", "draw_depth_plot")] # Run this twice, believe it or not, to get the 
 rm(list=unused)

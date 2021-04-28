@@ -52,7 +52,8 @@ p_cells <- ggplot() +
   scale_x_reverse() +
   #scale_colour_brewer(palette="Dark2") +
   xlab("depth, mbsf") +
-  ylab(expression(paste("cells ", ml^{-1}, " sed"))) +
+  scale_y_continuous(name = expression(paste("cells ", ml^{-1}, " sed")), breaks = seq(from=4e7, to = 8e8, by = 2e8)) + 
+  #ylab(expression(paste("cells ", ml^{-1}, " sed"))) +
   scale_colour_manual(name = "core", values = c("#517C96", "#E65933",
                                  "#000000")) + 
   coord_flip() + 
@@ -65,7 +66,7 @@ if(print.plots) {
   print(p_cells)
 }
 if(save.plots) {
-  ggsave("plots/cell_counts_smoothed.png", p_cells, height=4, width=3.35, units="in", dpi=300)
+  ggsave("plots/cell_counts_smoothed_v2.png", p_cells, height=4, width=3.35, units="in", dpi=300)
 }
 
 #ggsave("plots/2016_04_13_cell_smoothing.png", p_cells, height=4, width=3, units="in", dpi=300)
@@ -160,7 +161,7 @@ v0_fig <- cowplot::plot_grid(plot_list[["clostripain"]], plot_list[["gingipain"]
                              plot_list[["alpha-\nglucosidase"]], plot_list[["beta-\nglucosidase"]], plot_list[["cellobiosidase\n"]], plot_list[["beta-\nxylosidase"]], plot_list[["N-acetyl-\nglucosaminidase"]], plot_list[["alkaline\nphosphatase"]], p_legend,
                              ncol = 7)
 
-x.grob <- grid::textGrob(expression(paste(v[0], ", nmol substrate g " , sed^{-1}, " ", hr^{-1})), 
+x.grob <- grid::textGrob(expression(paste("cell specific ", v[0], ", amol substrate " , cell^{-1}, " ", hr^{-1})), 
                          gp=grid::gpar(fontface="bold", col="black", fontsize=10))
 y.grob <- grid::textGrob("depth, mbsf", 
                          gp=grid::gpar(col="black", fontsize=10), rot = 90)

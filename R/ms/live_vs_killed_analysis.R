@@ -1,3 +1,12 @@
+# A little setup
+point.size <- 0.5
+line.size <- 0.25
+old_theme <- theme_get() 
+theme_set(old_theme +
+            theme(panel.grid.major = element_blank(), 
+                  panel.grid.minor = element_blank()))
+  
+
 # Create v0 column with minimum values
 min.v0s <- samp_slopes %>%  
   group_by(treatment) %>%
@@ -6,7 +15,10 @@ min.v0.killed <- min.v0s$min.v0s[min.v0s$treatment == "killed"]
 min.v0.live <- min.v0s$min.v0s[min.v0s$treatment == "live"]
 
 
-# Create a df with columns for 
+# Pivot to a wider format with columns for live and killed activities, and then
+#   adjust activities so that 
+#   a.) activities below detection limit are set to detection limit, and 
+#   b.) activities that have been adjusted like that are marked
 live_killed <- samp_slopes %>%
   select(depth.mbsf, substrate, treatment, class, enzyme, v0, v0.se) %>%
   pivot_wider(id_cols = c(depth.mbsf, substrate, class, enzyme), # note id_cols defaults to everything not in names_from and values_from
@@ -25,15 +37,14 @@ live_killed <- samp_slopes %>%
          killed.se.is.truncated = case_when((v0.min_killed == 1e-2)  ~ TRUE,
                                             TRUE ~ FALSE))
 
-line.size = 0.25
-
+# Plot of activity retained after autoclaving vs activity before autoclaving
 p_live_killed <- ggplot(live_killed, aes(x=v0.adj_live, y=v0.adj_killed)) + 
   geom_smooth(aes(group=1), method = "lm", color="black") +
   geom_crossbar(aes(xmin=v0.min_live, xmax=v0.adj_live, colour = live.se.is.truncated), size = line.size) +
   geom_crossbar(aes(xmin=v0.adj_live, xmax=v0.adj_live+v0.se_live), size = line.size) +
   geom_crossbar(aes(ymin=v0.min_killed, ymax=v0.adj_killed, colour=killed.se.is.truncated), size = line.size) +
   geom_crossbar(aes(ymin=v0.adj_killed, ymax=v0.adj_killed+v0.se_killed), size = line.size) +
-  geom_point(size=0.5) +
+  geom_point(size=point.size) +
   scale_x_log10(name = expression(paste("live ", v[0], ", ", "nmol ", g^{-1}, " sed ", hr^{-1}))) + 
   scale_y_log10(name = expression(paste("autoclaved ", v[0], ", ", "nmol ", g^{-1}, " sed ", hr^{-1}))) + 
   scale_colour_manual(values = c("black", "gray75"), guide=FALSE) +
@@ -45,9 +56,9 @@ p_live_killed <- ggplot(live_killed, aes(x=v0.adj_live, y=v0.adj_killed)) +
 if(print.plots) {
     print(p_live_killed)
 }
-if(save.plots) {
-  ggsave("plots/live_vs_killed.png", p_live_killed, height=2.5, width=3, units = "in", dpi=300)
-}
+# if(save.plots) {
+#   ggsave("plots/live_vs_killed.png", p_live_killed, height=2.5, width=3, units = "in", dpi=300)
+# }
 
 ######
 # Calculate average fraction of enzyme activity lost
@@ -78,8 +89,8 @@ class_lines <- data.frame(x=c(0.5, 1.5), xend=c(2.5, 3.5), y=c(2.65, 2.5), yend=
 
 # Plot all classes
 p_classes <- ggplot(frac_killed, aes(x=class.fac, y=frac.killed)) + 
-  geom_boxplot() + 
-  geom_point(position = position_dodge2(width = 0.3)) + 
+  geom_boxplot(size = line.size, outlier.shape = NA) + 
+  geom_point(position = position_dodge2(width = 0.3), size = point.size) + 
   scale_y_continuous(name = "activity after autoclaving", labels = scales::percent) + 
   geom_segment(data=  class_lines, aes(x=x, xend=xend, y=y, yend=yend)) +
   theme(axis.title.x = element_blank(),
@@ -87,10 +98,8 @@ p_classes <- ggplot(frac_killed, aes(x=class.fac, y=frac.killed)) +
 if(print.plots) {
   print(p_classes)
 }
-if(save.plots) {
-  ggsave("plots/activity_differences_class.png", p_classes, height = 2.5, width = 3.38, units = "in", dpi = 300)
-}
 
+# For just the peptidases
 frac_killed_peptidase_summ <- frac_killed %>%
   filter(class == "peptidase") %>%
   group_by(enzyme) %>%
@@ -112,8 +121,8 @@ frac_killed_peptidase <- frac_killed %>%
   
 
 p_frac_peptidases_killed <- ggplot(frac_killed_peptidase, aes(x=enzyme.fac, y=frac.killed)) +
-  geom_boxplot() +
-  geom_point(position=position_dodge2(width=0.3)) + 
+  geom_boxplot(size = line.size, outlier.shape = NA) +
+  geom_point(position=position_dodge2(width=0.3), size = point.size) + 
   geom_segment(data = peptidase_lines, aes(x=x, xend=xend, y=y, yend=yend)) + 
   #geom_text(data = peptidase_labels, aes(x=enzyme.fac, y=median.frac, label = label)) + 
   scale_y_continuous(name = "activity after autoclaving", labels = scales::percent) + 
@@ -122,17 +131,16 @@ p_frac_peptidases_killed <- ggplot(frac_killed_peptidase, aes(x=enzyme.fac, y=fr
 if(print.plots) {
   print(p_frac_peptidases_killed)
 }
-if(save.plots) {
-  ggsave("plots/activity_differences_peptidase.png", p_frac_peptidases_killed, height = 2.5, width = 3.38, units = "in", dpi = 300)
-}
+
 
 spacing <- theme(plot.margin = unit(c(0.5, 0.3, 0 ,0.5), "cm")) # Create custom spacing around the plots to make the panel labels look right
 
 png("plots/activity_differences_combined.png", height = 2.5, width = 7.3, units = "in", res= 300)
-cowplot::plot_grid(p_classes + spacing, 
+cowplot::plot_grid(p_live_killed + spacing,
+                   p_classes + spacing, 
                    p_frac_peptidases_killed + spacing, 
-                   labels=c("A", "B"), 
-                   rel_widths = c(1, 1), 
+                   labels=c("A", "B", "C"), 
+                   rel_widths = c(1, 0.7, 1), 
                    label_size = 10, 
                    nrow = 1)
 dev.off()

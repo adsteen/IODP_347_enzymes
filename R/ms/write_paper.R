@@ -8,7 +8,7 @@ theme_set(theme_bw() +
 
 print.plots <- FALSE
 print.extra.plots <- FALSE
-save.plots <- TRUE
+save.plots <- FALSE
 
 # Most of this code was written in pre-tidyverse syntax
 # lm_stats performs linear regressions and returns slopes and std errors, a bit like a combination of map, lm and some broom functions

@@ -135,7 +135,7 @@ if(print.plots) {
 
 spacing <- theme(plot.margin = unit(c(0.5, 0.3, 0 ,0.5), "cm")) # Create custom spacing around the plots to make the panel labels look right
 
-png("plots/activity_differences_combined.png", height = 2.5, width = 7.3, units = "in", res= 300)
+tiff("plots/activity_differences_combined.tiff", height = 2.5, width = 7.3, units = "in", res= 300, compression = "lzw")
 cowplot::plot_grid(p_live_killed + spacing,
                    p_classes + spacing, 
                    p_frac_peptidases_killed + spacing, 

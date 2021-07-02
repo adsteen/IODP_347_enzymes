@@ -148,8 +148,8 @@ ging_live_bespoke <- nls(mm_form,
 
 # Note: I messed around with a bunch of values, but couldn't get the nls to predict Km > Km's lower bound.
 # There's strong evidence of substrate inhibition, so I'll cut off everything greatert than 500 uM
-v0_data[v0_data$substrate == "clos" & v0_data$treatment == "live", "Km"] <- get_km(clos_live_bespoke)
-v0_data[v0_data$substrate == "clos" & v0_data$treatment == "live", "Km.err"] <- get_km_se(clos_live_bespoke)
+v0_data[v0_data$substrate == "clos" & v0_data$treatment == "live", "Km"] <- safe_Km(clos_live_bespoke)
+v0_data[v0_data$substrate == "clos" & v0_data$treatment == "live", "Km.err"] <- safe_Km_err(clos_live_bespoke)
 v0_data[v0_data$substrate == "clos" & v0_data$treatment == "live", "nls_fit"][1] <- clos_live_bespoke
 
 

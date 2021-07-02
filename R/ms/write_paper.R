@@ -8,7 +8,7 @@ theme_set(theme_bw() +
 
 print.plots <- FALSE
 print.extra.plots <- FALSE
-save.plots <- TRUE
+save.plots <- FALSE
 
 # Most of this code was written in pre-tidyverse syntax
 # lm_stats performs linear regressions and returns slopes and std errors, a bit like a combination of map, lm and some broom functions
@@ -25,3 +25,10 @@ source("R/ms/v0_cell_sp.R")
 
 # Look at activities of live vs killed enyzmes
 source("R/ms/live_vs_killed_analysis.R")
+
+# Calculate KMs of surface samples
+source("R/ms/surface_kms.R")
+
+# Calculate km of clostripain downcore
+source("R/ms/km.R")
+source("R/ms/km.R")

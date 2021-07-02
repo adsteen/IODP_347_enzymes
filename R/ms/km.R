@@ -214,7 +214,7 @@ if(print.plots) {
   print(p_cal_slopes)
 }
 if(save.plots) {
-  ggsave("plots/trypsin_sat_curves.png", height = 4, width = 3.5, units = "in", dpi = 300)
+  ggsave("plots/clostripain_sat_curves.png", height = 4, width = 3.5, units = "in", dpi = 300)
 }
 
 
@@ -259,7 +259,7 @@ if(print.plots) {
 # }
 
 
-png("plots/clostripain_sat_curves.png", height = 4.5, width = 3.34, units = "in", res = 300)
+tiff("plots/clostripain_sat_curves.tiff", height = 4.5, width = 3.34, units = "in", res = 300, compression="lzw")
   cowplot::plot_grid(p_cal_slopes, p_km_v_depth, labels=c("A", "B"), rel_widths = c(2, 1), label_size = 10, nrow = 2)
 dev.off()
 #ggsave("plots/2016_04_04_Km_four_depths_calib.png", p_cal_slopes, height=5, width=8, units="in", dpi=150)

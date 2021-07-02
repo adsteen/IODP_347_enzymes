@@ -66,7 +66,7 @@ if(print.plots) {
   print(p_cells)
 }
 if(save.plots) {
-  ggsave("plots/cell_counts_smoothed_v2.png", p_cells, height=4, width=3.35, units="in", dpi=300)
+  ggsave("plots/cell_counts_smoothed_v2.tiff", p_cells, height=4, width=3.35, units="in", dpi=300, compression="lzw")
 }
 
 #ggsave("plots/2016_04_13_cell_smoothing.png", p_cells, height=4, width=3, units="in", dpi=300)
@@ -171,7 +171,7 @@ if(print.plots) {
   print(p_v0_final)
 }
 if(save.plots) {
-  ggsave("plots/v0_downcore_cell_specific.png", p_v0_final, height = 4, width = 7.08, units = "in", dpi = 300)
+  ggsave("plots/v0_downcore_cell_specific.tiff", p_v0_final, height = 4, width = 7.08, units = "in", dpi = 300, compression="lzw")
 }
 
 # Clean out the global environment

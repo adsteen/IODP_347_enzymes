@@ -369,7 +369,7 @@ if(print.plots) {
   print(p_v0_final)
 }
 if(save.plots) {
-  ggsave("plots/v0_downcore.png", p_v0_final, height = 4, width = 7.08, units = "in", dpi = 300)
+  ggsave("plots/v0_downcore.tiff", p_v0_final, height = 4, width = 7.08, units = "in", dpi = 300, compression = "lzw")
 }
 
 #######

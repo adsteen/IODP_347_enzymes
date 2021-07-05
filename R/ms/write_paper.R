@@ -32,3 +32,6 @@ source("R/ms/surface_kms.R")
 # Calculate km of clostripain downcore
 source("R/ms/km.R")
 source("R/ms/km.R")
+
+# Run calculation of enzyme lifetimes
+source("R/ms/calculate_tau.R")

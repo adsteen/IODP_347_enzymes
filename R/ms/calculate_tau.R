@@ -31,35 +31,14 @@ d <- data.frame(SA = SA.vec,
          tau.yr = tau.hr/(24*365)) %>%
   select(SA, tau.hr, tau.yr, refs)
 
+# Median lifetime
+median(d$tau.hr)
+
 # Print a LaTeX table. I'm not using knitr because I'm a chud.
 d %>%
-  mutate(SA =signif(SA, digits = 2),
+  mutate(SA = signif(SA, digits = 2),
          tau.hr = signif(tau.hr, digits = 2),
          tau.yr = signif(tau.yr, digits = 2)) %>%
   stargazer(summary=FALSE)
 
-
-
-
-
-
-
-#Calculate enzyme concentration based on observed activity and specific activity (supplemental equation 4)
-E.calc<-function(A,SA){A/SA}
-
-#Calculate enzyme lifetime based on enzyme concentration, growth efficiency and oxidation rate (supplemental equation 5)
-tau.calc<-function(E,R,GE){E/(R*GE)}
-
-#Enzyme concentrations as a function of specific activity, nmol C in enzyme g sed-1
-E<-E.calc(A,SA.vec)
-
-#Enyzme lifetimes as a function of enzyme concnetrations, hours
-tau<-tau.calc(E,R,GE)
-
-d <- data.frame(SA = SA.vec,
-                tau = tau,
-                refs = SA.refs)
-print(d)
-
-library(stargazer)
 
